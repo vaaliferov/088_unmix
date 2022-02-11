@@ -4,6 +4,7 @@ import pydub
 import torch
 import telegram
 import subprocess
+import telegram.ext
 from secret import *
 
 def separate(path, sm, ss, em, es):
