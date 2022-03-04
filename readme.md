@@ -1,6 +1,5 @@
-* inspired by [music demixing challenge](https://www.aicrowd.com/challenges/music-demixing-challenge-ismir-2021)
-* model: [demucs](https://github.com/facebookresearch/demucs) pretrained on [musdb18](https://sigsep.github.io/datasets/musdb.html)
-* deployment: vm instance on [oracle cloud](https://www.oracle.com/cloud)
-* demo: https://t.me/vaaliferov_unmix_bot
+#### Music Source Separation
+
+This tool allows you to extract the "sources" (bass, drums, vocals and other) from a given piece of music. The model is based on the [Demucs](https://github.com/facebookresearch/demucs) architecture (mdx_extra_q pretrained on [musdb18](https://sigsep.github.io/datasets/musdb.html)). [[demo](https://t.me/vaaliferov_unmix_bot)]
 
 ![Alt Text](pics/tg.png)
