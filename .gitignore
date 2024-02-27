@@ -1,5 +1,5 @@
-audio
-models
+env
 *.mp3
+mdx_extra_q
 __pycache__
 .ipynb_checkpoints

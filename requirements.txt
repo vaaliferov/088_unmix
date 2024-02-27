@@ -1,10 +1,11 @@
-numpy
-torch
-pydub
-demucs
-stempeg
-torchaudio
-python-telegram-bot
+-f https://download.pytorch.org/whl/torch_stable.html
 
-# https://github.com/chrisstaite/lameenc#build
-whls/lameenc-1.3.1-cp38-cp38-linux_aarch64.whl
+diffq==0.2.4
+numpy==1.26.4
+pydub==0.25.1
+demucs==4.0.1
+stempeg==0.2.3
+lameenc==1.7.0
+torch==2.2.1+cpu
+torchaudio==2.2.1+cpu
+python-telegram-bot==20.8

@@ -1,47 +1,63 @@
-import os
-import sys
-import pydub
-import torch
-import telegram
-import subprocess
-import telegram.ext
-from secret import *
+import os, sys, shutil, argparse
+import pydub, subprocess, asyncio
 
-def separate(path, sm, ss, em, es):
-    model_name = 'mdx_extra_q'
-    targets = ('vocals', 'drums', 'bass', 'other')
-    start, end = sm*60*1000 + ss*1000, em*60*1000 + es*1000
-    pydub.AudioSegment.from_mp3(path)[start:end].export('out.mp3')
-    cmd = (sys.executable, '-m', 'demucs.separate', '-d', 'cpu', 
-           '-n', model_name, '-o', '.', '--mp3', 'out.mp3')
+from telegram import Update
+from telegram import InputMediaAudio
+from telegram.ext import MessageHandler
+from telegram.ext import filters, Application
+
+parser = argparse.ArgumentParser()
+parser.add_argument('id', type=int, help='bot owner id')
+parser.add_argument('token', type=str, help='bot token')
+args = parser.parse_args()
+
+
+async def handle_text(update, context):
+    usage = 'Please, send me mp3 audio file'
+    await update.message.reply_text(usage)
+
+
+def separate(path):
+
+    pydub.AudioSegment.from_mp3(path)[30000:50000].export(path)
+
+    cmd = (sys.executable, 
+           '-m', 'demucs.separate', '-d', 'cpu', 
+           '-n', 'mdx_extra_q', '-o', '.', '--mp3', path)
+
     subprocess.Popen(cmd, env=os.environ.copy()).wait()
-    return [f'{model_name}/out/{target}.mp3' for target in targets]
 
-def handle_text(update, context):
-    usage_text = 'Send me an audio file'
-    update.message.reply_text(usage_text)
+    targets = ('vocals', 'drums', 'bass', 'other')
+    filename = os.path.basename(path).split('.')[0]
+    return [f'./mdx_extra_q/{filename}/{t}.mp3' for t in targets]
 
-def handle_audio(update, context):
+
+async def handle_audio(update, context):
+
+    audio = update.message.audio
+    path = audio['file_id'] + '.mp3'
+    user = update.message.from_user
     chat_id = update.message.chat_id
-    file_id = update.message.audio['file_id']
-    if chat_id != TG_BOT_OWNER_ID:
-        user = update.message.from_user
-        msg = f"@{user['username']} {user['id']}"
-        context.bot.send_message(TG_BOT_OWNER_ID, msg)
-        context.bot.send_audio(TG_BOT_OWNER_ID, file_id)
-    context.bot.send_message(chat_id, 'please, wait...')
-    context.bot.getFile(file_id).download('in.mp3')
-    result = separate('in.mp3', sm=0, ss=30, em=0, es=50)
-    for path in result:
-        with open(path, 'rb') as audio:
-            context.bot.send_audio(chat_id, audio)
 
-torch.hub.set_dir('./models')
-# ~/.cache/torch/hub/checkpoints/
-ft = telegram.ext.Filters.text
-fa = telegram.ext.Filters.audio
-h = telegram.ext.MessageHandler
-u = telegram.ext.Updater(TG_BOT_TOKEN)
-u.dispatcher.add_handler(h(ft,handle_text))
-u.dispatcher.add_handler(h(fa,handle_audio))
-u.start_polling(); u.idle()
+    file = await context.bot.get_file(audio)
+    await file.download_to_drive(path)
+
+    loop = asyncio.get_running_loop()
+    await update.message.reply_text('please, wait ..')
+    paths = await loop.run_in_executor(None, separate, path)
+    media_group = [InputMediaAudio(open(p, 'rb')) for p in paths]
+    await update.message.reply_media_group(media_group)
+
+    if user['id'] != args.id:
+        msg = f"@{user['username']} {user['id']}"
+        await context.bot.send_message(args.id, msg)
+        await context.bot.send_audio(args.id, audio['file_id'])
+
+    for p in [path] + paths: os.remove(p)
+    shutil.rmtree(os.path.dirname(paths[0]))
+
+
+app = Application.builder().token(args.token).build()
+app.add_handler(MessageHandler(filters.TEXT, handle_text))
+app.add_handler(MessageHandler(filters.AUDIO, handle_audio))
+app.run_polling(allowed_updates=Update.ALL_TYPES)

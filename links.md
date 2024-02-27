@@ -7,3 +7,4 @@
 * https://github.com/sigsep/sigsep-mus-eval
 * https://github.com/facebookresearch/demucs
 * https://github.com/facebookresearch/denoiser
+* https://github.com/chrisstaite/lameenc#build
